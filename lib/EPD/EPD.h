@@ -20,8 +20,8 @@
 // to run with ESP32 and simplify the EPD driver from Pervasive Displays Inc
 // to only handle 2.7 inch e-ink screen
 //
-#ifndef EPD_H_
-#define EPD_H_
+#ifndef _EPD_H_
+#define _EPD_H_
 
 #include <Arduino.h>
 #include <SPI.h>
@@ -108,4 +108,4 @@ public:
 	void update(const uint8_t *image);
 };
 
-#endif
+#endif // _EPD_H_

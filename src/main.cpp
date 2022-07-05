@@ -1,55 +1,46 @@
 
-#include <Arduino.h>
-#include <SPI.h>
-#include <EPD.h>
-#include <frame.h>
+#include "bsp.h"
+#include "user_wifi.h"
 
-#define DISPLAY_WIDTH 264
-#define DISPLAY_HEIGHT 176
+#include "display/display.h"
+#include "wifi/wifi.h"
 
-static uint8_t state = 0;
+#if !defined(SSID) || !defined(PASSWORD)
+#error "Create a user_wifi.h header and add SSID & PASSWORD define to allow wifi connection"
+#endif
 
-EPD einkDisplay(DISPLAY_WIDTH, DISPLAY_HEIGHT, 33, 25, 26, 27, 14, 5, SPI);
-Frame displayFrame(DISPLAY_WIDTH, DISPLAY_HEIGHT);
+/* local types & variables */
 
-// setup
+/* private functions prototypes */
+
+/* public functions */
+/**
+ * @brief Setup function
+ *
+ */
 void setup()
 {
-  einkDisplay.begin();
-  displayFrame.fillScreen(WHITE);
-}
-
-// main loop
-void loop()
-{
-  einkDisplay.setFactor();
-
-  switch (state)
+  // logger
+  if (CORE_DEBUG_LEVEL == 6)
   {
-  default:
-    break;
-    
-  case 0:
-    einkDisplay.clear();
-    state = 1;
-    break;
-
-  case 1:
-    displayFrame.setCursor(100,100);
-    displayFrame.setTextColor(1);
-    displayFrame.printf("LFLY METAR TAF");
-    einkDisplay.update(displayFrame.getBuffer());
-    displayFrame.clear();
-    state = 2;
-    break;
-
-  case 2:
-    displayFrame.drawCircle(100,30,20,BLACK);
-    einkDisplay.update(displayFrame.getBuffer());
-    displayFrame.clear();
-    state = 0;
-    break;
+    Serial.begin(115200);
   }
 
-  delay(10000);
+  // init
+  displayInit(DISPLAY_WIDTH, DISPLAY_HEIGHT);
+  wifiInit(SSID, PASSWORD);
+
+  // task core 0
+  xTaskCreatePinnedToCore(displayTask, "displayTask", 2048, NULL, 1, NULL, 0);
+
+  // task core 1
+  xTaskCreatePinnedToCore(wifiTask, "wifiTask", 2048, NULL, 1, NULL, 1);
+}
+
+/**
+ * @brief Main loop
+ *
+ */
+void loop()
+{
 }

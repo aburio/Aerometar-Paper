@@ -1,2 +1,11 @@
+# Build files
 .pio
+
+# Project files
+include/user_wifi.h
+
+# IDE files
 .vscode
+
+# System files
+.DS_Store

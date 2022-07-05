@@ -32,7 +32,6 @@
 
 // delays - more consistent naming
 #define Delay_ms(ms) delay(ms)
-#define Delay_us(us) delayMicroseconds(us)
 
 // inline arrays
 #define ARRAY(type, ...) ((type[]){__VA_ARGS__})
@@ -558,5 +557,4 @@ static void SPI_send(uint8_t cs_pin, const uint8_t *buffer, uint16_t length)
 
 	// CS high
 	digitalWrite(cs_pin, HIGH);
-	Delay_us(10);
 }

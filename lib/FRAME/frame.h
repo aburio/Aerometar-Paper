@@ -1,5 +1,5 @@
-#ifndef FRAME_H_
-#define FRAME_H_
+#ifndef _FRAME_H_
+#define _FRAME_H_
 
 #include <Adafruit_GFX.h>
 
@@ -20,4 +20,4 @@ public:
   }
 };
 
-#endif // FRAME_H_
+#endif // _FRAME_H_
