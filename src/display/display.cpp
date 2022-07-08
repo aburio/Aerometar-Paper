@@ -2,12 +2,12 @@
 
 #include <SPI.h>
 #include <EPD.h>
-#include <frame.h>
 
 /* local types & variables */
-Frame *displayFrame;
-EPD *einkDisplay;
-uint8_t state;
+QueueHandle_t display_refresh_queue;
+Frame *display_frame;
+EPD *display_eink;
+
 
 /* private functions prototypes */
 
@@ -20,13 +20,17 @@ uint8_t state;
  */
 void displayInit(uint16_t width, uint16_t height)
 {
-    displayFrame = new Frame(width, height);
-    einkDisplay = new EPD(width, height, 33, 25, 26, 27, 14, 5, SPI);
+    // init variables
+    display_refresh_queue = xQueueCreate(1, sizeof(bool));
+    display_eink = new EPD(width, height, 33, 25, 26, 27, 14, 5, SPI);
+    display_frame = new Frame(width, height);
     
-    // init
-    einkDisplay->begin();
-    displayFrame->fillScreen(WHITE);
-    state=0;
+    // setup display
+    display_eink->begin();
+    display_frame->clear();
+    display_frame->setFont(&Ubuntu_Bold7pt7b);
+    display_eink->setFactor();
+    display_eink->clear();
     log_v("display_init : init done");
 }
 
@@ -37,43 +41,22 @@ void displayInit(uint16_t width, uint16_t height)
  */
 void displayTask(void *pvParameters)
 {
+    BaseType_t status;
+    bool display_refresh = false;
+
+    log_v("display_task : start task");
     
     for(;;)
     {
-        einkDisplay->setFactor();
+        status = xQueueReceive(display_refresh_queue, &display_refresh, 0);
 
-        switch (state)
+        if (status == pdPASS)
         {
-        default:
-            vTaskDelay(100/portTICK_PERIOD_MS);
-            break;
-
-        case 0:
-            log_v("display_task : clear screen");
-            einkDisplay->clear();
-            state = 1;
-            break;
-
-        case 1:
-            log_v("display_task : draw text");
-            displayFrame->setCursor(100, 100);
-            displayFrame->setTextColor(1);
-            displayFrame->printf("LFLY METAR TAF");
-            einkDisplay->update(displayFrame->getBuffer());
-            displayFrame->clear();
-            state = 2;
-            break;
-
-        case 2:
-            log_v("display_task : draw circle");
-            displayFrame->drawCircle(100, 30, 20, BLACK);
-            einkDisplay->update(displayFrame->getBuffer());
-            displayFrame->clear();
-            state = 0;
-            break;
+            display_eink->setFactor();
+            display_eink->update(display_frame->getBuffer());
         }
 
-        vTaskDelay(3000/portTICK_PERIOD_MS);
+        vTaskDelay(200/portTICK_PERIOD_MS);
     }
 
     vTaskDelete(NULL);

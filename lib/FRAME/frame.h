@@ -17,6 +17,7 @@ public:
 
   void clear() {
     GFXcanvas1::fillScreen(WHITE);
+    GFXcanvas1::setCursor(0,0);
   }
 };
 

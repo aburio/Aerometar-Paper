@@ -3,6 +3,7 @@
 #include <WiFi.h>
 
 /* local types & variables */
+QueueHandle_t wifi_event_queue;
 
 /* private functions prototypes */
 
@@ -15,6 +16,10 @@
  */
 void wifiInit(const String ssid, const String password)
 {
+    // init variables
+    wifi_event_queue = xQueueCreate(1, sizeof(int8_t));
+
+    // setup wifi
     WiFi.mode(WIFI_MODE_STA);
     WiFi.softAP("Aerometar-Paper");
     WiFi.setHostname("Aerometar-Paper");
@@ -34,8 +39,9 @@ void wifiTask(void *pvParameters)
     wl_status_t wifi_status = WiFi.status();
 
     log_v("wifi_task : start task");
+    xQueueSend(wifi_event_queue, &wifi_status, 0);
 
-    if (WiFi.status() == WL_IDLE_STATUS)
+    if (wifi_status == WL_IDLE_STATUS)
     {
         WiFi.begin();
     }
@@ -51,6 +57,7 @@ void wifiTask(void *pvParameters)
             {
                 log_v("wifi_task : connected");
                 wifi_connected = true;
+                xQueueSend(wifi_event_queue, &wifi_status, 0);
             }
             break;
         
@@ -59,20 +66,28 @@ void wifiTask(void *pvParameters)
             log_v("wifi_task : access point");
             WiFi.mode(WIFI_MODE_AP);
             WiFi.softAP("Aerometar-Paper");
+            xQueueSend(wifi_event_queue, &wifi_status, 0);
             break;
 
         case WL_CONNECTION_LOST:
             log_v("wifi_task : reconnect");
             WiFi.reconnect();
+            xQueueSend(wifi_event_queue, &wifi_status, 0);
             break;
         
         case WL_IDLE_STATUS:
         case WL_DISCONNECTED:
         default:
             log_v("wifi_task : connecting");
-            vTaskDelay(100/portTICK_PERIOD_MS);
+            if (wifi_connected == true)
+            {
+                wifi_connected = false;
+                xQueueSend(wifi_event_queue, &wifi_status, 0);
+            }
             break;
         }
+
+        vTaskDelay(100/portTICK_PERIOD_MS);
     }
     
     vTaskDelete(NULL);
